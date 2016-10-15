@@ -118,7 +118,9 @@ public class EclipseCompilerImpl extends Main {
 			name = name.replace('\\', '/');
 			CompilationUnit compilationUnit = new CompilationUnit(null,
 				name,
-				null) {
+				null, 
+				null,
+				shouldIgnoreOptionalProblems(this.ignoreOptionalProblemsFromFolders, name.toCharArray())) {
 
 				@Override
 				public char[] getContents() {
