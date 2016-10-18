@@ -1043,6 +1043,70 @@ static final String[] FAKE_ZERO_ARG_OPTIONS = new String[] {
 		assertTrue("delete failed", inputFile.delete());
 		assertTrue("delete failed", dir.delete());
 	}
+
+	/**
+	 * Test diagnostic logger ignores warnings suppressed from Annotation processing.
+	 * Bug 506004
+	 */
+	public void testCompilerDiagnosticLoggerAnnotationSupport() throws Exception {
+		String tmpFolder = new File(System.getProperty("java.io.tmpdir")).getCanonicalPath();
+		File inputFile = new File(tmpFolder, "Suppress.java");
+		BufferedWriter writer = null;
+		try {
+			writer = new BufferedWriter(new FileWriter(inputFile));
+			writer.write(
+				"package p;\n" +
+				"public class Suppress {"
+				+ "@SuppressWarnings(\"unused\")"
+				+ "private String unused=\"testUnused\";}");
+			writer.flush();
+			writer.close();
+		} catch (IOException e) {
+			// ignore
+		} finally {
+			if (writer != null) {
+				try {
+					writer.close();
+				} catch (IOException e) {
+					// ignore
+				}
+			}
+		}
+		
+		// System compiler
+		StandardJavaFileManager manager = compiler.getStandardFileManager(null, Locale.getDefault(), Charset.defaultCharset());
+
+		// create new list containing inputfile
+		List<File> files = new ArrayList<File>();
+		files.add(inputFile);
+		Iterable<? extends JavaFileObject> units = manager.getJavaFileObjectsFromFiles(files);
+		StringWriter stringWriter = new StringWriter();
+		PrintWriter printWriter = new PrintWriter(stringWriter);
+
+		List<String> options = new ArrayList<String>();
+		options.add("-d");
+		options.add(tmpFolder);
+		
+		//Add warnings to the compiler
+		options.add("-warn:+unused");
+		
+		StringWriter diagWritter = new StringWriter();
+		PrintWriter diagPrintWriter = new PrintWriter(diagWritter);
+		CompilerInvocationDiagnosticListener diagListener = new CompilerInvocationDiagnosticListener(diagPrintWriter);
+		
+ 		CompilationTask task = compiler.getTask(printWriter, manager, diagListener, options, null, units);
+ 		
+		assertTrue(task.call());
+		
+		diagPrintWriter.flush();
+		diagPrintWriter.close();
+		printWriter.flush();
+		printWriter.close();
+		
+		//Suppress annotation should prevent reporting a warning
+		assertTrue("Expected no warnings to be generated. Instead got: " + diagWritter.toString(), 
+				diagListener.kind == CompilerInvocationDiagnosticListener.NONE);
+	}
 	/*
 	 * Clean up the compiler
 	 */

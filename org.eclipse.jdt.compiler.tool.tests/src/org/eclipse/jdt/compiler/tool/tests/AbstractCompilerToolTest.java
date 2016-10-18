@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticListener;
@@ -69,7 +70,7 @@ public class AbstractCompilerToolTest extends BatchCompilerTest {
 		}
 		@Override
 		public void report(Diagnostic<? extends JavaFileObject> diagnostic) {
-			err.println(diagnostic);
+			err.println(diagnostic.getMessage(Locale.ENGLISH));
 			if (this.kind == NONE) {
 				switch(diagnostic.getKind()) {
 					case ERROR :
